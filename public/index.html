@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FRC Radio Kiosk – AP Configuration</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>⚡ FRC Radio Kiosk</h1>
+    <nav>
+      <a href="/" class="active">AP Config</a>
+      <a href="/vh109.html">VH109 Config</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ── AP Connection ──────────────────────────────────────────────── -->
+    <section>
+      <h2>🌐 Access Point Connection</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex: 2 1 320px;">
+          <label for="apUrl">AP Configuration URL</label>
+          <input type="url" id="apUrl" placeholder="http://10.0.100.2/configuration" />
+        </div>
+      </div>
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="autoPushOnStartup" />
+          <span class="slider"></span>
+        </label>
+        <span style="font-size:.9rem;">Auto-push configuration to AP on startup</span>
+      </div>
+    </section>
+
+    <!-- ── RF Channel ─────────────────────────────────────────────────── -->
+    <section>
+      <h2>📡 RF Channel Settings</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="channel">Channel</label>
+          <select id="channel">
+            <option value="36">36</option>
+            <option value="37" selected>37</option>
+            <option value="40">40</option>
+            <option value="44">44</option>
+            <option value="48">48</option>
+            <option value="52">52</option>
+            <option value="56">56</option>
+            <option value="60">60</option>
+            <option value="64">64</option>
+            <option value="100">100</option>
+            <option value="104">104</option>
+            <option value="108">108</option>
+            <option value="112">112</option>
+            <option value="116">116</option>
+            <option value="120">120</option>
+            <option value="124">124</option>
+            <option value="128">128</option>
+            <option value="132">132</option>
+            <option value="136">136</option>
+            <option value="140">140</option>
+            <option value="149">149</option>
+            <option value="153">153</option>
+            <option value="157">157</option>
+            <option value="161">161</option>
+            <option value="165">165</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="channelBandwidth">Bandwidth</label>
+          <select id="channelBandwidth">
+            <option value="20MHz">20 MHz</option>
+            <option value="40MHz" selected>40 MHz</option>
+            <option value="80MHz">80 MHz</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── VLAN Config ────────────────────────────────────────────────── -->
+    <section>
+      <h2>🔀 VLAN Configuration</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="redVlans">Red VLANs (underscore-separated)</label>
+          <input type="text" id="redVlans" placeholder="10_20_30" pattern="^\d+(_\d+)*$" />
+        </div>
+        <div class="form-group">
+          <label for="blueVlans">Blue VLANs (underscore-separated)</label>
+          <input type="text" id="blueVlans" placeholder="40_50_60" pattern="^\d+(_\d+)*$" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Station Configurations ─────────────────────────────────────── -->
+    <section>
+      <h2>🤖 Station Configurations</h2>
+      <div class="station-grid">
+        <!-- Red Alliance -->
+        <div class="station-card red-card" data-station="red1">
+          <h3>Red 1</h3>
+          <div class="form-group" style="margin-bottom:.6rem;">
+            <label>SSID (Team Number)</label>
+            <input type="text" class="ssid-input" placeholder="e.g. 1234" maxlength="32" />
+          </div>
+          <div class="form-group">
+            <label>WPA Key</label>
+            <div class="wpa-row">
+              <input type="text" class="wpa-input" placeholder="Min 8 chars" maxlength="63" />
+              <button class="btn btn-neutral btn-sm gen-btn" title="Generate WPA key">🔑 Gen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="station-card red-card" data-station="red2">
+          <h3>Red 2</h3>
+          <div class="form-group" style="margin-bottom:.6rem;">
+            <label>SSID (Team Number)</label>
+            <input type="text" class="ssid-input" placeholder="e.g. 2345" maxlength="32" />
+          </div>
+          <div class="form-group">
+            <label>WPA Key</label>
+            <div class="wpa-row">
+              <input type="text" class="wpa-input" placeholder="Min 8 chars" maxlength="63" />
+              <button class="btn btn-neutral btn-sm gen-btn" title="Generate WPA key">🔑 Gen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="station-card red-card" data-station="red3">
+          <h3>Red 3</h3>
+          <div class="form-group" style="margin-bottom:.6rem;">
+            <label>SSID (Team Number)</label>
+            <input type="text" class="ssid-input" placeholder="e.g. 3456" maxlength="32" />
+          </div>
+          <div class="form-group">
+            <label>WPA Key</label>
+            <div class="wpa-row">
+              <input type="text" class="wpa-input" placeholder="Min 8 chars" maxlength="63" />
+              <button class="btn btn-neutral btn-sm gen-btn" title="Generate WPA key">🔑 Gen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Blue Alliance -->
+        <div class="station-card blue-card" data-station="blue1">
+          <h3>Blue 1</h3>
+          <div class="form-group" style="margin-bottom:.6rem;">
+            <label>SSID (Team Number)</label>
+            <input type="text" class="ssid-input" placeholder="e.g. 4567" maxlength="32" />
+          </div>
+          <div class="form-group">
+            <label>WPA Key</label>
+            <div class="wpa-row">
+              <input type="text" class="wpa-input" placeholder="Min 8 chars" maxlength="63" />
+              <button class="btn btn-neutral btn-sm gen-btn" title="Generate WPA key">🔑 Gen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="station-card blue-card" data-station="blue2">
+          <h3>Blue 2</h3>
+          <div class="form-group" style="margin-bottom:.6rem;">
+            <label>SSID (Team Number)</label>
+            <input type="text" class="ssid-input" placeholder="e.g. 5678" maxlength="32" />
+          </div>
+          <div class="form-group">
+            <label>WPA Key</label>
+            <div class="wpa-row">
+              <input type="text" class="wpa-input" placeholder="Min 8 chars" maxlength="63" />
+              <button class="btn btn-neutral btn-sm gen-btn" title="Generate WPA key">🔑 Gen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="station-card blue-card" data-station="blue3">
+          <h3>Blue 3</h3>
+          <div class="form-group" style="margin-bottom:.6rem;">
+            <label>SSID (Team Number)</label>
+            <input type="text" class="ssid-input" placeholder="e.g. 6789" maxlength="32" />
+          </div>
+          <div class="form-group">
+            <label>WPA Key</label>
+            <div class="wpa-row">
+              <input type="text" class="wpa-input" placeholder="Min 8 chars" maxlength="63" />
+              <button class="btn btn-neutral btn-sm gen-btn" title="Generate WPA key">🔑 Gen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-bar">
+        <button id="btn-save" class="btn btn-primary">💾 Save Configuration</button>
+        <button id="btn-push" class="btn btn-warning">📤 Push to AP</button>
+        <button id="btn-save-push" class="btn btn-success">💾📤 Save &amp; Push</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="status-toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FRC Radio Kiosk – VH109 Configuration</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>⚡ FRC Radio Kiosk</h1>
+    <nav>
+      <a href="/">AP Config</a>
+      <a href="/vh109.html" class="active">VH109 Config</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ── USB Port Selection ─────────────────────────────────────────── -->
+    <section>
+      <h2>🔌 USB Serial Port</h2>
+      <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+        Connect the VH109 to the Raspberry Pi via its USB port, then select the
+        corresponding serial device below.  Typical device names:
+        <code>/dev/ttyUSB0</code>, <code>/dev/ttyACM0</code>.
+      </p>
+      <div class="form-row">
+        <div class="form-group" style="flex: 2 1 280px;">
+          <label for="portSelect">Serial Port</label>
+          <select id="portSelect">
+            <option value="">— refresh to detect ports —</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button id="btn-refresh-ports" class="btn btn-neutral">🔄 Refresh Ports</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Station Preset ────────────────────────────────────────────── -->
+    <section>
+      <h2>🤖 Load Station Preset</h2>
+      <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
+        Optionally load the SSID and WPA key from a saved station configuration
+        (from the AP Config page) to pre-fill the fields below.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="stationPreset">Station</label>
+          <select id="stationPreset">
+            <option value="">— manual entry —</option>
+            <option value="red1">Red 1</option>
+            <option value="red2">Red 2</option>
+            <option value="red3">Red 3</option>
+            <option value="blue1">Blue 1</option>
+            <option value="blue2">Blue 2</option>
+            <option value="blue3">Blue 3</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button id="btn-load-preset" class="btn btn-neutral">📋 Load</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Radio Configuration ───────────────────────────────────────── -->
+    <section>
+      <h2>⚙️ VH109 Radio Settings</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="vh109Ssid">SSID</label>
+          <input type="text" id="vh109Ssid" placeholder="e.g. 1234" maxlength="32" />
+        </div>
+        <div class="form-group">
+          <label for="vh109WpaKey">WPA Key</label>
+          <div class="wpa-row">
+            <input type="text" id="vh109WpaKey" placeholder="Min 8 chars" maxlength="63" />
+            <button id="btn-gen-wpa" class="btn btn-neutral btn-sm" title="Generate WPA key">🔑 Gen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button id="btn-configure" class="btn btn-success">⚡ Configure VH109</button>
+      </div>
+    </section>
+
+    <!-- ── Session Log ───────────────────────────────────────────────── -->
+    <section>
+      <h2>📋 Session Log</h2>
+      <div class="log-box" id="log-box">Waiting for configuration…</div>
+      <div class="action-bar">
+        <button id="btn-clear-log" class="btn btn-neutral btn-sm">🗑 Clear Log</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="status-toast"></div>
+
+  <script src="vh109.js"></script>
+</body>
+</html>
