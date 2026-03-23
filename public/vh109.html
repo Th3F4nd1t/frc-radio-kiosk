@@ -16,23 +16,32 @@
   </header>
 
   <main>
-    <!-- ── USB Port Selection ─────────────────────────────────────────── -->
+    <!-- ── Network Connection ─────────────────────────────────────────── -->
     <section>
-      <h2>🔌 USB Serial Port</h2>
+      <h2>🔌 Radio Network Connection</h2>
       <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">
-        Connect the VH109 to the Raspberry Pi via its USB port, then select the
-        corresponding serial device below.  Typical device names:
-        <code>/dev/ttyUSB0</code>, <code>/dev/ttyACM0</code>.
+        Connect the VH109 to the Raspberry Pi via its ethernet port using the
+        dedicated USB ethernet dongle.  Enter the radio's configuration URL
+        below (typically <code>http://10.0.0.1/configuration</code> or the
+        team's <code>http://10.TE.AM.1/configuration</code> address).
       </p>
       <div class="form-row">
-        <div class="form-group" style="flex: 2 1 280px;">
-          <label for="portSelect">Serial Port</label>
-          <select id="portSelect">
-            <option value="">— refresh to detect ports —</option>
-          </select>
+        <div class="form-group" style="flex: 2 1 320px;">
+          <label for="radioUrl">Radio Configuration URL</label>
+          <input type="url" id="radioUrl" placeholder="http://10.0.0.1/configuration" />
         </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button id="btn-refresh-ports" class="btn btn-neutral">🔄 Refresh Ports</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex: 1 1 200px;">
+          <label for="localAddress">
+            Local Interface IP
+            <span style="font-weight:400; text-transform:none; letter-spacing:0;">
+              (optional – the Pi's IP on the USB dongle)
+            </span>
+          </label>
+          <input type="text" id="localAddress"
+                 placeholder="e.g. 10.0.0.5"
+                 pattern="^(\d{1,3}\.){3}\d{1,3}$" />
         </div>
       </div>
     </section>

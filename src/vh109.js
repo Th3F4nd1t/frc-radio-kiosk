@@ -1,125 +1,101 @@
 'use strict';
 
 /**
- * VH109 (Vivid-Hosting FRC radio) USB serial configuration module.
+ * VH109 (Vivid-Hosting FRC radio) network configuration module.
  *
- * The VH109 exposes a UART console via its USB port (typically enumerated as
- * /dev/ttyUSBx or /dev/ttyACMx on Linux).  Configuration is applied via UCI
- * commands on the OpenWRT-based firmware.
+ * The VH109 is configured over HTTP, reached via a dedicated USB ethernet
+ * dongle connected directly to the radio.  The Pi sends an HTTP POST to the
+ * radio's configuration URL with the desired SSID and WPA key.
  *
- * Baud rate: 115200 8N1 (default for VH109 / OM5P-AC class hardware).
+ * Default radio URL : http://10.0.0.1/configuration
+ * Default radio IP  : 10.0.0.1  (factory / unconfigured state)
  *
- * NOTE: If your specific firmware uses a different baud rate or command set,
- * adjust BAUD_RATE and buildCommands() below.
+ * If your USB ethernet dongle has a different IP than the radio's subnet you
+ * can pass `localAddress` to bind the outgoing request to the dongle's IP,
+ * which ensures the request is routed through the correct interface.
+ *
+ * NOTE: The exact endpoint path and payload shape depend on the radio's
+ * firmware version.  Adjust RADIO_PATH and buildPayload() below if needed.
  */
 
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
+const http  = require('http');
+const https = require('https');
 
-const BAUD_RATE = 115200;
-const COMMAND_DELAY_MS = 600;   // ms between successive commands
-const TOTAL_TIMEOUT_MS = 30000; // bail out if the whole session takes > 30 s
+const REQUEST_TIMEOUT_MS = 10000;
 
 /**
- * Return the list of available serial ports (all USB-serial adapters etc.).
- * @returns {Promise<Array<{path:string, manufacturer:string, productId:string, vendorId:string}>>}
+ * Build the JSON payload sent to the VH109.
+ * @param {string} ssid
+ * @param {string} wpaKey
+ * @returns {object}
  */
-async function listPorts() {
-  const ports = await SerialPort.list();
-  return ports.map((p) => ({
-    path:         p.path,
-    manufacturer: p.manufacturer  || 'Unknown',
-    productId:    p.productId     || '',
-    vendorId:     p.vendorId      || '',
-    serialNumber: p.serialNumber  || ''
-  }));
+function buildPayload(ssid, wpaKey) {
+  return { ssid, wpaKey };
 }
 
 /**
- * Build the UCI command sequence for the VH109.
- * @param {string} ssid
- * @param {string} wpaKey
- * @returns {string[]}
- */
-function buildCommands(ssid, wpaKey) {
-  // Sanitise – only allow printable ASCII, no single-quotes, no backslashes
-  const safe = (s) => s.replace(/['"\\]/g, '');
-  const sSsid   = safe(ssid);
-  const sWpaKey = safe(wpaKey);
-
-  return [
-    `uci set wireless.@wifi-iface[0].ssid='${sSsid}'`,
-    `uci set wireless.@wifi-iface[0].key='${sWpaKey}'`,
-    `uci set wireless.@wifi-iface[0].encryption='psk2'`,
-    'uci commit wireless',
-    'wifi reload'
-  ];
-}
-
-/**
- * Open a serial connection to a VH109, apply SSID + WPA key, and close.
+ * POST configuration to a VH109 radio over HTTP.
  *
- * @param {string} portPath  - e.g. '/dev/ttyUSB0'
- * @param {string} ssid
- * @param {string} wpaKey
- * @returns {Promise<{success:boolean, log:string[]}>}
+ * @param {object} opts
+ * @param {string}  opts.radioUrl      - Full URL, e.g. "http://10.0.0.1/configuration"
+ * @param {string}  opts.ssid          - Desired SSID (team number)
+ * @param {string}  opts.wpaKey        - Desired WPA-PSK passphrase
+ * @param {string} [opts.localAddress] - Local IP to bind to (the Pi's IP on the dongle interface)
+ * @returns {Promise<{statusCode:number, body:string}>}
  */
-async function configureVH109(portPath, ssid, wpaKey) {
-  if (!portPath) throw new Error('portPath is required');
+async function configureVH109({ radioUrl, ssid, wpaKey, localAddress } = {}) {
+  if (!radioUrl) throw new Error('radioUrl is required');
   if (!ssid)     throw new Error('ssid is required');
   if (!wpaKey)   throw new Error('wpaKey is required');
 
+  let url;
+  try {
+    url = new URL(radioUrl);
+  } catch {
+    throw new Error(`Invalid radio URL: ${radioUrl}`);
+  }
+
+  const isHttps  = url.protocol === 'https:';
+  const lib      = isHttps ? https : http;
+  const port     = url.port ? parseInt(url.port, 10) : (isHttps ? 443 : 80);
+  const postData = JSON.stringify(buildPayload(ssid, wpaKey));
+
   return new Promise((resolve, reject) => {
-    const log = [];
-
-    const port = new SerialPort({ path: portPath, baudRate: BAUD_RATE, autoOpen: false });
-    const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
-
-    let timer = null;
-
-    const done = (err) => {
-      if (timer) clearTimeout(timer);
-      if (port.isOpen) {
-        port.close(() => {
-          if (err) reject(err); else resolve({ success: true, log });
-        });
-      } else {
-        if (err) reject(err); else resolve({ success: true, log });
+    const options = {
+      hostname: url.hostname,
+      port,
+      path:     url.pathname + (url.search || ''),
+      method:   'POST',
+      headers:  {
+        'Content-Type':   'application/json',
+        'Content-Length': Buffer.byteLength(postData)
       }
     };
 
-    timer = setTimeout(() => done(new Error('Configuration timed out')), TOTAL_TIMEOUT_MS);
+    if (localAddress) options.localAddress = localAddress;
 
-    parser.on('data', (line) => log.push(line.trim()));
-    port.on('error', (err) => done(err));
-
-    port.open((openErr) => {
-      if (openErr) {
-        done(new Error(`Cannot open ${portPath}: ${openErr.message}`));
-        return;
-      }
-
-      const commands = buildCommands(ssid, wpaKey);
-      let idx = 0;
-
-      // Give the console a moment to be ready before sending commands
-      const sendNext = () => {
-        if (idx >= commands.length) {
-          // Wait for the last command's output then finish
-          setTimeout(() => done(null), COMMAND_DELAY_MS * 2);
-          return;
+    const req = lib.request(options, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ statusCode: res.statusCode, body });
+        } else {
+          reject(new Error(`Radio responded with HTTP ${res.statusCode}: ${body}`));
         }
-        const cmd = commands[idx++];
-        log.push(`> ${cmd}`);
-        port.write(`${cmd}\n`, (writeErr) => {
-          if (writeErr) { done(new Error(`Write failed: ${writeErr.message}`)); return; }
-          setTimeout(sendNext, COMMAND_DELAY_MS);
-        });
-      };
-
-      setTimeout(sendNext, 1000);
+      });
     });
+
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error('Request to VH109 timed out'));
+    });
+
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
   });
 }
 
-module.exports = { listPorts, configureVH109, buildCommands };
+module.exports = { configureVH109, buildPayload };
+

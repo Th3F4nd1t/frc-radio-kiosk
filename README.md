@@ -13,7 +13,7 @@ A locally-hosted web application for a Raspberry Pi that configures the
 | **Persistent Settings** | Config saved to `data/config.json`; reloaded on every server start |
 | **Startup Push** | On boot the server automatically pushes the saved config to `http://10.0.100.2/configuration` |
 | **WPA Key Generation** | Cryptographically secure 8-63 char WPA-PSK keys, one click per station |
-| **VH109 USB Config** | Configure a team radio over USB serial from the "VH109 Config" page |
+| **VH109 Network Config** | Configure a team radio over HTTP via a USB ethernet dongle from the "VH109 Config" page |
 | **Kiosk Mode** | Chromium opens automatically in full-screen kiosk mode at boot |
 
 ---
@@ -86,8 +86,7 @@ All endpoints return JSON `{ success: boolean, ... }`.
 | `POST` | `/api/push` | Push the persisted config to the VH113 AP |
 | `POST` | `/api/save-and-push` | Save + push in one request |
 | `POST` | `/api/generate-wpa` | Generate a random WPA key (`{ length?: number }`) |
-| `GET`  | `/api/vh109/ports` | List available USB serial ports |
-| `POST` | `/api/vh109/configure` | Configure a VH109 (`{ port, ssid, wpaKey }`) |
+| `POST` | `/api/vh109/configure` | Configure a VH109 (`{ radioUrl, ssid, wpaKey, localAddress? }`) |
 
 ### Example AP payload (sent to VH113)
 
@@ -110,30 +109,52 @@ All endpoints return JSON `{ success: boolean, ... }`.
 
 ---
 
-## VH109 USB Serial Configuration
+## VH109 Network Configuration
 
-The VH109 radio (Vivid-Hosting, OpenWRT-based) exposes a UART console over
-its USB port at **115200 8N1**.  When you click **Configure VH109** the server
-opens the selected serial port and sends UCI commands:
+The VH109 radio is configured over **HTTP**, reached via a dedicated USB
+ethernet dongle plugged into the Raspberry Pi.
+
+### Physical setup
 
 ```
-uci set wireless.@wifi-iface[0].ssid='<ssid>'
-uci set wireless.@wifi-iface[0].key='<wpaKey>'
-uci set wireless.@wifi-iface[0].encryption='psk2'
-uci commit wireless
-wifi reload
+Raspberry Pi
+  ├── eth0 (built-in or main NIC) ──→ field network / internet
+  └── eth1 / usb0 (USB ethernet dongle) ──→ VH109 ethernet port
 ```
 
-> **Note:** The exact UCI path (`wifi-iface[0]` vs a named interface) depends
-> on the radio's firmware version.  Adjust `src/vh109.js → buildCommands()` if
-> your firmware uses a different path.
+### How it works
 
-### Giving the `pi` user access to serial ports
+1. Connect the VH109's ethernet port to the USB ethernet dongle on the Pi.
+2. Open the **VH109 Config** page in the kiosk.
+3. Enter the radio's configuration URL (e.g. `http://10.0.0.1/configuration`).
+4. Optionally enter the Pi's IP address on the dongle interface as the
+   **Local Interface IP** – this binds the outgoing HTTP request to that
+   interface, ensuring it is routed to the radio rather than out the main NIC.
+5. Enter (or load from a station preset) the SSID and WPA key, then click
+   **Configure VH109**.
 
-```bash
-sudo usermod -aG dialout pi
-# Log out and back in for the change to take effect
+The server sends an HTTP POST to the radio:
+
+```json
+{ "ssid": "1234", "wpaKey": "SomePassphrase" }
 ```
+
+> **Note:** The exact endpoint path and payload shape depend on the radio's
+> firmware version.  Adjust `src/vh109.js → buildPayload()` if your firmware
+> uses a different format.
+
+### Routing the request through the correct interface
+
+If the Pi has multiple network interfaces, set a static IP on the USB dongle
+interface in the same subnet as the radio and either:
+
+* Use the **Local Interface IP** field in the UI to bind the request to that
+  IP, **or**
+* Add a host route: `sudo ip route add 10.0.0.1 dev eth1` (replace `eth1`
+  with your dongle's interface name, e.g. `usb0` or `enx…`).
+
+To make the route persistent across reboots add it to
+`/etc/dhcpcd.conf` or a `networkd` configuration file.
 
 ---
 

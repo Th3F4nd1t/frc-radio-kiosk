@@ -6,7 +6,7 @@ const path     = require('path');
 const { loadConfig, saveConfig }    = require('./config');
 const { pushToAP }                   = require('./apConfig');
 const { generateWpaKey }             = require('./wpaKey');
-const { listPorts, configureVH109 }  = require('./vh109');
+const { configureVH109 }  = require('./vh109');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -108,32 +108,21 @@ app.post('/api/generate-wpa', (req, res) => {
   }
 });
 
-// ── API: VH109 USB Configuration ─────────────────────────────────────────────
+// ── API: VH109 Network Configuration ─────────────────────────────────────────
 
-/** GET list available serial ports */
-app.get('/api/vh109/ports', async (_req, res) => {
-  try {
-    const ports = await listPorts();
-    res.json({ success: true, ports });
-  } catch (err) {
-    console.error('[GET /api/vh109/ports]', err.message);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/** POST configure a VH109 over the selected serial port */
+/** POST configure a VH109 over its HTTP API via the USB ethernet dongle */
 app.post('/api/vh109/configure', async (req, res) => {
   try {
-    const { port: portPath, ssid, wpaKey } = req.body || {};
-    if (!portPath) return res.status(400).json({ success: false, error: '`port` is required' });
+    const { radioUrl, ssid, wpaKey, localAddress } = req.body || {};
+    if (!radioUrl) return res.status(400).json({ success: false, error: '`radioUrl` is required' });
     if (!ssid)     return res.status(400).json({ success: false, error: '`ssid` is required' });
     if (!wpaKey)   return res.status(400).json({ success: false, error: '`wpaKey` is required' });
 
-    const result = await configureVH109(portPath, ssid, wpaKey);
-    res.json({ success: true, message: 'VH109 configured successfully.', log: result.log });
+    const result = await configureVH109({ radioUrl, ssid, wpaKey, localAddress: localAddress || undefined });
+    res.json({ success: true, message: 'VH109 configured successfully.', result });
   } catch (err) {
     console.error('[POST /api/vh109/configure]', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(502).json({ success: false, error: err.message });
   }
 });
 

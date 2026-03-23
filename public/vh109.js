@@ -1,5 +1,6 @@
 /* ── FRC Radio Kiosk – VH109 page JS ──────────────────────────────────────
- * Handles: port discovery, preset loading, VH109 serial configuration
+ * Handles: preset loading, VH109 network (HTTP) configuration
+ * The VH109 is reached via a USB ethernet dongle connected to the radio.
  * ──────────────────────────────────────────────────────────────────────────── */
 'use strict';
 
@@ -29,30 +30,6 @@ async function apiFetch(method, url, body) {
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(url, opts);
   return res.json();
-}
-
-// ── Refresh serial ports ──────────────────────────────────────────────────────
-async function refreshPorts() {
-  const sel = document.getElementById('portSelect');
-  sel.innerHTML = '<option value="">— detecting… —</option>';
-  try {
-    const data = await apiFetch('GET', '/api/vh109/ports');
-    sel.innerHTML = '';
-    if (data.success && data.ports.length > 0) {
-      data.ports.forEach((p) => {
-        const opt = document.createElement('option');
-        opt.value = p.path;
-        opt.textContent = `${p.path}  ${p.manufacturer !== 'Unknown' ? '– ' + p.manufacturer : ''}`.trim();
-        sel.appendChild(opt);
-      });
-    } else {
-      sel.innerHTML = '<option value="">— no serial ports found —</option>';
-      showToast('No serial ports detected. Check the USB connection.', 'error');
-    }
-  } catch (err) {
-    sel.innerHTML = '<option value="">— error detecting ports —</option>';
-    showToast('Error listing ports: ' + err.message, 'error');
-  }
 }
 
 // ── Load station preset from saved config ─────────────────────────────────────
@@ -91,25 +68,31 @@ async function generateWpa() {
   }
 }
 
-// ── Configure VH109 ───────────────────────────────────────────────────────────
+// ── Configure VH109 over HTTP ─────────────────────────────────────────────────
 async function configureVH109() {
-  const port   = document.getElementById('portSelect').value;
-  const ssid   = document.getElementById('vh109Ssid').value.trim();
-  const wpaKey = document.getElementById('vh109WpaKey').value.trim();
+  const radioUrl     = document.getElementById('radioUrl').value.trim();
+  const localAddress = document.getElementById('localAddress').value.trim();
+  const ssid         = document.getElementById('vh109Ssid').value.trim();
+  const wpaKey       = document.getElementById('vh109WpaKey').value.trim();
 
-  if (!port)   { showToast('Select a serial port.', 'error'); return; }
-  if (!ssid)   { showToast('Enter an SSID.', 'error'); return; }
-  if (!wpaKey) { showToast('Enter a WPA key.', 'error'); return; }
+  if (!radioUrl) { showToast('Enter the radio configuration URL.', 'error'); return; }
+  if (!ssid)     { showToast('Enter an SSID.', 'error'); return; }
+  if (!wpaKey)   { showToast('Enter a WPA key.', 'error'); return; }
 
   const btn = document.getElementById('btn-configure');
   btn.disabled = true;
   showToast('⏳ Configuring VH109…', 'info');
-  appendLog(`\n[${new Date().toLocaleTimeString()}] Configuring VH109 on ${port} — SSID: ${ssid}`);
+  appendLog(`\n[${new Date().toLocaleTimeString()}] Configuring VH109`);
+  appendLog(`  URL  : ${radioUrl}`);
+  if (localAddress) appendLog(`  Bind : ${localAddress}`);
+  appendLog(`  SSID : ${ssid}`);
 
   try {
-    const data = await apiFetch('POST', '/api/vh109/configure', { port, ssid, wpaKey });
+    const body = { radioUrl, ssid, wpaKey };
+    if (localAddress) body.localAddress = localAddress;
+
+    const data = await apiFetch('POST', '/api/vh109/configure', body);
     if (data.success) {
-      (data.log || []).forEach((line) => appendLog(line));
       showToast('✅ ' + data.message, 'ok');
       appendLog(`[DONE] VH109 configured successfully.`);
     } else {
@@ -125,7 +108,6 @@ async function configureVH109() {
 }
 
 // ── Wire up events ────────────────────────────────────────────────────────────
-document.getElementById('btn-refresh-ports').addEventListener('click', refreshPorts);
 document.getElementById('btn-load-preset').addEventListener('click', loadPreset);
 document.getElementById('btn-gen-wpa').addEventListener('click', generateWpa);
 document.getElementById('btn-configure').addEventListener('click', configureVH109);
@@ -133,5 +115,3 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
   document.getElementById('log-box').textContent = '';
 });
 
-// ── Init: auto-refresh ports on page load ─────────────────────────────────────
-refreshPorts();
