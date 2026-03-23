@@ -1,0 +1,17 @@
+[Unit]
+Description=FRC Radio Kiosk – Chromium Kiosk Browser
+After=graphical.target frc-radio-kiosk.service
+Wants=frc-radio-kiosk.service
+
+[Service]
+Type=simple
+User=pi
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+ExecStartPre=/bin/sleep 5
+ExecStart=/bin/bash /home/pi/frc-radio-kiosk/scripts/start-browser.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=graphical.target

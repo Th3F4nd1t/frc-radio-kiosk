@@ -1,0 +1,11 @@
+# Node.js dependencies
+node_modules/
+
+# Runtime-generated persistent configuration (contains WPA keys)
+data/config.json
+
+# OS / editor artifacts
+.DS_Store
+*.swp
+*.swo
+.env

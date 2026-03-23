@@ -1,0 +1,21 @@
+[Unit]
+Description=FRC Radio Kiosk – Web Server
+Documentation=https://github.com/Th3F4nd1t/frc-radio-kiosk
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/frc-radio-kiosk
+ExecStart=/usr/bin/node /home/pi/frc-radio-kiosk/src/server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=frc-radio-kiosk
+# Ensure the data directory is writable
+ReadWritePaths=/home/pi/frc-radio-kiosk/data
+
+[Install]
+WantedBy=multi-user.target

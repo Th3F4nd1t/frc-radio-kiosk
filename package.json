@@ -1,0 +1,20 @@
+{
+  "name": "frc-radio-kiosk",
+  "version": "1.0.0",
+  "description": "FRC Radio Kiosk – locally-hosted web UI for configuring the VH113 field AP and VH109 team radios",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
