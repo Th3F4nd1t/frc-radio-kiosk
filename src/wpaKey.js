@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 // Printable ASCII characters safe for WPA-PSK passphrases (no spaces or quotes
 // that could cause issues with various firmware implementations).
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#%^&*';
+const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
 /**
  * Generate a cryptographically secure WPA-PSK passphrase.
